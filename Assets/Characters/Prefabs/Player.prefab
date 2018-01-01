@@ -123,8 +123,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   input: {fileID: 0}
-  test_object: {fileID: 0}
+  m_current_mode: 0
   m_min_move_threshold: 0.15
+  m_min_melee_attack_threshold: 1.5
   m_min_turn_threshold: 0.99
   m_move_speed: 6.5
   m_turn_speed: 10

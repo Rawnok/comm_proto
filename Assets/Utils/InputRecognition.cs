@@ -7,16 +7,20 @@ public class InputRecognition : MonoBehaviour
     public delegate void OnMouseOverTerrain (Vector3 mouse_pos);
     public event OnMouseOverTerrain on_mouse_over_terrain_observers;
 
-    public delegate void OnMouseOverEnemy ();///TODO , might have to pass enemy script
+    public delegate void OnMouseOverEnemy (Enemy enemy);
     public event OnMouseOverEnemy on_mouse_over_enemy_observers;
 
-    public delegate void OnMouseOverLadder ();
+    public delegate void OnMouseOverCollectable (Collectables collectable_object);
+    public event OnMouseOverCollectable on_mouse_over_collectable_observers;
+
+    public delegate void OnMouseOverLadder (Ladder ladder);
     public event OnMouseOverLadder on_mouse_over_ladder_observers;
     
 
     public const int ENEMY_LAYER = 8;
-    public const int GROUND_LAYER = 9;
+    public const int WALKABLE_LAYER = 9;
     public const int LADDER_LAYER = 10;
+    public const int COLLECTABLE_LAYER = 11;
 
     private const int MAX_DISTANCE_RAYCAST = 100;
 
@@ -36,12 +40,15 @@ public class InputRecognition : MonoBehaviour
             if ( CastOver ( ENEMY_LAYER, ray ) )
                 return;
 
+            if ( CastOver ( COLLECTABLE_LAYER, ray ) )
+                return;
+
             // is over stiff object 
             if ( CastOver ( LADDER_LAYER, ray ) )
                 return;
 
             // is over terrain, if true return.
-            if ( CastOver ( GROUND_LAYER, ray ) )
+            if ( CastOver ( WALKABLE_LAYER, ray ) )
                 return;
         }
     }
@@ -57,19 +64,51 @@ public class InputRecognition : MonoBehaviour
             switch ( layerNum )
             {
                 case ENEMY_LAYER:
-                    ///TODO set cursor
-                    on_mouse_over_enemy_observers ();
-                    return true;
-                case GROUND_LAYER:
-                    ///TODO set cursor
-                    on_mouse_over_terrain_observers ( hit.point );
-                    return true;
+                    {
+                        Enemy enemy = hit.collider.gameObject.GetComponent<Enemy> ();
+                        if ( enemy != null )
+                        {
+                            on_mouse_over_enemy_observers ( enemy );
+                        }
+                        else
+                        {
+                            Debug.LogError ( "enemy script not found on enemy layer" );
+                        }
+                        return true;
+                    }
+                case COLLECTABLE_LAYER:
+                    {
+                        Collectables collectable_script = hit.collider.gameObject.GetComponent<Collectables> ();
+                        if ( collectable_script != null )
+                        {
+                            on_mouse_over_collectable_observers ( collectable_script );
+                        }
+                        else
+                        {
+                            Debug.LogError ( "Collectable script not found on collectable layer" );
+                        }
+                        return true;
+                    }
                 case LADDER_LAYER:
-                    ///TODO set ladder cursor
-                    on_mouse_over_ladder_observers ();
-                    return true;
+                    {
+                        Ladder ladder_script = hit.collider.gameObject.GetComponent<Ladder> ();
+                        if ( ladder_script != null )
+                        {
+                            on_mouse_over_ladder_observers ( ladder_script );
+                        }
+                        else
+                        {
+                            Debug.LogError ( "Ladder script not found on Ladder layer" );
+                        }
+                        return true;
+                    }
+                case WALKABLE_LAYER:
+                    {
+                        on_mouse_over_terrain_observers ( hit.point );
+                        return true;
+                    }
                 default:
-                    Debug.LogError ("Cursor found an un identified layer : " + hit.collider.gameObject.layer);
+                    Debug.LogError ("unidentified layer : " + hit.collider.gameObject.layer);
                     return false;
             }        
         }
