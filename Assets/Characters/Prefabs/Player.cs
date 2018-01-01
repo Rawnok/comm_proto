@@ -4,7 +4,6 @@ using UnityEngine;
 
 public class Player : MonoBehaviour
 {
-    public InputRecognition input;
     public enum PlayerMode
     {
         IDLE = 0,
@@ -12,7 +11,10 @@ public class Player : MonoBehaviour
         ATTACK
     }
     public PlayerMode m_current_mode;
-    
+
+    [SerializeField]
+    private InputRecognition input;
+
     [SerializeField]
     private float m_min_move_threshold = 0.15f;
 
@@ -29,27 +31,32 @@ public class Player : MonoBehaviour
     private float m_turn_speed = 10;
     
     private Vector3 m_current_destination;
-    //private bool m_is_moving;
+
+    public CharacterType m_char_type;
 
     void Start ()
     {
-        // ask game manager current chosen profile
-        // download all necessary info
-        // modify info
 
         input.on_mouse_over_terrain_observers += OnMouseOverTerrain;
         input.on_mouse_over_ladder_observers += OnMouseOverLadder;
         input.on_mouse_over_collectable_observers += OnMouseOverCollectables;
         input.on_mouse_over_enemy_observers += OnMouseOverEnemy;
+        
+        ///TODO, have to tweek turn / speed values according to profile
+        CharacterProfile my_profile = GameManager.instance.GetCharacterProfile (m_char_type);
+        //modify speed and other values from cp
+        if ( my_profile != null )
+        {
+            m_move_speed = m_move_speed * my_profile.speed_multiplier;
+        }
+        else
+        {
+            Debug.LogFormat ("No character profile found for {0} ", m_char_type );
+        }
 
         m_current_destination = transform.position;
     }//start
-
-    private void OnMouseOverLadder (Ladder ladder)
-    {
-        // move to ladder point, climb up
-    }
-
+    
     private void Update ()
     {
         MoveToCurrentDestination ();
@@ -59,7 +66,6 @@ public class Player : MonoBehaviour
     {
         // first look towards destination, 
         // then move to destination
-
         if ( !IsLookingAt (m_current_destination) )
         {
             Vector3 targetDirection = m_current_destination - transform.position;
@@ -114,24 +120,52 @@ public class Player : MonoBehaviour
     {
         Debug.Log ("Player should now attack enemy : melee attack");
     }
-    
-    #region input subscribers
 
-    private void OnMouseOverCollectables ( Collectables collectable_object )
+    private bool IsOnSelectionPool ()
     {
-        //examine if the player can pick up current object, 
+        return ( GameManager.instance.m_selection_pool.Contains ( m_char_type ) );
     }
 
-    private void OnMouseOverTerrain ( Vector3 destination )
+    #region input subscribers
+
+    public void OnMouseOverLadder ( Ladder ladder )
     {
+        // move to ladder point, climb up
+        if (!IsOnSelectionPool())
+        {
+            return;
+        }
+    }
+
+    public void OnMouseOverCollectables ( Collectables collectable_object )
+    {
+        //examine if the player can pick up current object, 
+        if ( !IsOnSelectionPool () )
+        {
+            return;
+        }
+    }
+
+    public void OnMouseOverTerrain ( Vector3 destination )
+    {
+        if ( !IsOnSelectionPool () )
+        {
+            return;
+        }
+
         if ( Input.GetMouseButtonDown ( 0 ) )
         {
             Move ( destination );
         }
     }
 
-    private void OnMouseOverEnemy ( Enemy enemy )
+    public void OnMouseOverEnemy ( Enemy enemy )
     {
+        if ( !IsOnSelectionPool () )
+        {
+            return;
+        }
+
         if ( Input.GetMouseButtonDown ( 0 ) )
         {
             m_current_mode = PlayerMode.ATTACK;

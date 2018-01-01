@@ -72,7 +72,7 @@ public class GameCursor : MonoBehaviour
     private void OnMouseOverTerrain ( Vector3 mouse_pos )
     {
         // base on current chosen ability, we will decide cursor
-        if ( GameManager.instance.m_current_chosen_ability == AbilityType.DEFAULT )
+        if ( GameManager.instance.m_current_char_profile.current_chosen_ability == AbilityType.DEFAULT )
         {
             CursorPack default_cursor = GetCursorOfType ( CursorType.DEFAULT );
             if ( default_cursor != null )

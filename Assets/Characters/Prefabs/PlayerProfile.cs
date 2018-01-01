@@ -49,7 +49,7 @@ public class CharacterProfile
 
     public List<CollectableType> collectables = new List<CollectableType> ();
     public List<AbilityType> abilities = new List<AbilityType> ();
-    public AbilityType current_ability = AbilityType.DEFAULT;
+    public AbilityType current_chosen_ability = AbilityType.DEFAULT;
     
     //pickup criteria is different from player to player
     public virtual void PickUp (CollectableType ctype)
@@ -60,6 +60,19 @@ public class CharacterProfile
     public virtual void Throw ()
     {
         Debug.Log ("player should throw current chosen item (ability) to a world position.");
+    }
+
+    public virtual void SelectAbility (AbilityType aType)
+    {
+        if (abilities.Contains(aType))
+        {
+            current_chosen_ability = aType;
+        }
+    }
+
+    public virtual void DeselectAbility ()
+    {
+        current_chosen_ability = AbilityType.DEFAULT;
     }
     
     public CharacterProfile (CharacterType ctype, float initial_health, float speed_multiplier)
@@ -93,8 +106,6 @@ public class GreenBaret : CharacterProfile
         abilities.Add ( AbilityType.PUNCH );
         abilities.Add ( AbilityType.KNIFE );
         abilities.Add ( AbilityType.RADIO );
-        
-        Debug.Log ("Green baret initialized");
     }
 
     public override void PickUp (CollectableType ctype)
