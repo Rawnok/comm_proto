@@ -18,7 +18,12 @@ public class InputRecognition : MonoBehaviour
 
     public delegate void OnMouseOverPlayer (CharacterType player_type);
     public event OnMouseOverPlayer on_mouse_over_player_observers;
-    
+
+    public delegate void OnAbilitySelect (AbilityType new_type);
+    public event OnAbilitySelect on_ability_select_observers;
+
+    public delegate void OnCharacterSelect ( CharacterType ctype );
+    public event OnCharacterSelect on_character_select_observers;
 
     public const int ENEMY_LAYER = 8;
     public const int WALKABLE_LAYER = 9;
@@ -38,45 +43,84 @@ public class InputRecognition : MonoBehaviour
         }
         else
         {
-            Ray ray = Camera.main.ScreenPointToRay ( Input.mousePosition );
+            CastRayOverWorld ();
+        }
 
-            //set priorities here
-            if ( CastOver ( PLAYER_LAYER, ray ) )
-            {
-                //Debug.Log ("Player layer found");
-                return;
-            }
+        MonitorCharacterSelection ();
+
+        MonitorAbilitySelection ();
+    }
+
+    private void MonitorAbilitySelection ()
+    {
+        if ( Input.GetKeyDown ( KeyCode.Z ) )
+        {
+            on_ability_select_observers (AbilityType.PISTOL);
+        }
+        else if ( Input.GetKeyDown ( KeyCode.X ) )
+        {
+            on_ability_select_observers ( AbilityType.KNIFE );
+        }
+    }
+    
+    private void MonitorCharacterSelection ()
+    {
+        if ( Input.GetKeyDown ( KeyCode.Alpha1 ) )
+        {
+            //GameManager.instance.SelectCharacter ( CharacterType.GREEN_BARET );
+            on_character_select_observers (CharacterType.GREEN_BARET);
+        }
+        else if ( Input.GetKeyDown ( KeyCode.Alpha2 ) )
+        {
+            //GameManager.instance.SelectCharacter ( CharacterType.SNIPER );
+            on_character_select_observers ( CharacterType.SNIPER );
+        }
+        else if ( Input.GetKeyDown ( KeyCode.Alpha3 ) )
+        {
+            //GameManager.instance.SelectCharacter ( CharacterType.SAPPER );
+            on_character_select_observers ( CharacterType.SAPPER );
+        }
+    }
+
+    private void CastRayOverWorld ()
+    {
+        Ray ray = Camera.main.ScreenPointToRay ( Input.mousePosition );
+
+        //set priorities here
+        if ( CastOver ( PLAYER_LAYER, ray ) )
+        {
+            //Debug.Log ("Player layer found");
+            return;
+        }
 
 
-            //is over enemy
-            if ( CastOver ( ENEMY_LAYER, ray ) )
-            {
-                //Debug.Log ( "enemy layer found" );
-                return;
-            }
+        //is over enemy
+        if ( CastOver ( ENEMY_LAYER, ray ) )
+        {
+            //Debug.Log ( "enemy layer found" );
+            return;
+        }
 
 
-            if ( CastOver ( COLLECTABLE_LAYER, ray ) )
-            {
-                //Debug.Log ( "collectable layer found" );
-                return;
-            }
+        if ( CastOver ( COLLECTABLE_LAYER, ray ) )
+        {
+            //Debug.Log ( "collectable layer found" );
+            return;
+        }
 
 
-            // is over stiff object 
-            if ( CastOver ( LADDER_LAYER, ray ) )
-            {
-                //Debug.Log ( "ladder layer found" );
-                return;
-            }
-                
+        // is over stiff object 
+        if ( CastOver ( LADDER_LAYER, ray ) )
+        {
+            //Debug.Log ( "ladder layer found" );
+            return;
+        }
 
-            if ( CastOver ( WALKABLE_LAYER, ray ) )
-            {
-                //Debug.Log ( "walkable layer found" );
-                return;
-            }
 
+        if ( CastOver ( WALKABLE_LAYER, ray ) )
+        {
+            //Debug.Log ( "walkable layer found" );
+            return;
         }
     }
 
@@ -88,7 +132,6 @@ public class InputRecognition : MonoBehaviour
         if ( hasHit )
         {
             //set cursor, call observers
-
             /*
             if ( last_saved_layer == layerNum )
             {
@@ -109,20 +152,20 @@ public class InputRecognition : MonoBehaviour
                         }
                         else
                         {
-                            Debug.LogError ("Player layer found, but not player script");
+                            Debug.LogError ("Player layer found without player script");
                         }
                         return true;
                     }
                 case ENEMY_LAYER:
                     {
-                        Enemy enemy = hit.collider.gameObject.GetComponent<Enemy> ();
+                        Enemy enemy = hit.collider.gameObject.transform.parent.GetComponent<Enemy> ();
                         if ( enemy != null )
                         {
                             on_mouse_over_enemy_observers ( enemy );
                         }
                         else
                         {
-                            Debug.LogError ( "enemy script not found on enemy layer" );
+                            Debug.LogErrorFormat ( "enemy script not found on enemy layer : {0}", hit.collider.gameObject );
                         }
                         return true;
                     }

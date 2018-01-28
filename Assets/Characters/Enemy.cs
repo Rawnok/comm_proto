@@ -2,15 +2,38 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Enemy : MonoBehaviour {
+public class Enemy : MonoBehaviour
+{
+    public float m_health = 100;
+    public bool m_is_alive = true;
+    public bool m_is_on_same_height = true;
 
-	// Use this for initialization
-	void Start () {
-		
-	}
-	
-	// Update is called once per frame
-	void Update () {
-		
-	}
+    private Animator m_animator;
+
+    void Start ()
+    {
+        m_animator = gameObject.GetComponentInChildren<Animator> ();
+    }
+
+    void Die ()
+    {
+        if (m_is_alive)
+        {
+            AnimatorController.DoDeath ( m_animator );
+            m_is_alive = false;
+        }
+    }
+
+    public void TakeDamage (float damage_amount)
+    {
+        if (m_is_alive)
+        {
+            m_health -= damage_amount;
+
+            if (m_health <= 0)
+            {
+                Die ();
+            }
+        }
+    }
 }

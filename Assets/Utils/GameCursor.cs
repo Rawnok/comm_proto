@@ -42,6 +42,13 @@ public class GameCursor : MonoBehaviour
         input.on_mouse_over_enemy_observers += OnMouseOverEnemy;
         input.on_mouse_over_ladder_observers += OnMouseOverLadder;
         input.on_mouse_over_terrain_observers += OnMouseOverTerrain;
+        input.on_character_select_observers += OnCharacterSelect;
+    }
+
+    private void OnCharacterSelect ( CharacterType ctype )
+    {
+        CursorPack default_cursor = GetCursorOfType ( CursorType.DEFAULT );
+        Cursor.SetCursor ( default_cursor.image, default_cursor.offset, CursorMode.Auto );
     }
 
     private void OnMouseOverCollectables (Collectables collectable)
@@ -72,20 +79,43 @@ public class GameCursor : MonoBehaviour
     private void OnMouseOverTerrain ( Vector3 mouse_pos )
     {
         // base on current chosen ability, we will decide cursor
-        if ( GameManager.instance.m_current_char_profile.current_chosen_ability == AbilityType.DEFAULT )
+        AbilityType current_ability_type = GameManager.instance.m_current_char_profile.current_chosen_ability;
+
+        switch ( current_ability_type )
         {
-            CursorPack default_cursor = GetCursorOfType ( CursorType.DEFAULT );
-            if ( default_cursor != null )
-            {
-                Cursor.SetCursor ( default_cursor.image, default_cursor.offset, CursorMode.Auto );
-            }
+            case AbilityType.UNSET:
+            case AbilityType.DEFAULT:
+                CursorPack default_cursor = GetCursorOfType ( CursorType.DEFAULT );
+                if ( default_cursor != null )
+                {
+                    Cursor.SetCursor ( default_cursor.image, default_cursor.offset, CursorMode.Auto );
+                }
+                break;
+            case AbilityType.KNIFE:
+                CursorPack knife_cursor = GetCursorOfType ( CursorType.KNIFE );
+                Cursor.SetCursor ( knife_cursor.image, knife_cursor.offset, CursorMode.Auto );
+                break;
+            case AbilityType.HAND_PICK:
+                CursorPack hand_cursor = GetCursorOfType ( CursorType.HAND );
+                Cursor.SetCursor ( hand_cursor.image, hand_cursor.offset, CursorMode.Auto );
+                break;
+            case AbilityType.THROW:
+                break;
+            case AbilityType.PISTOL:
+                break;
+            case AbilityType.PUNCH:
+                break;
+            case AbilityType.SNIPING:
+                break;
+            case AbilityType.TRAP:
+                break;
+            case AbilityType.MEDIC:
+                break;
+            case AbilityType.RADIO:
+                break;
+            default:
+                break;
         }
-        else
-        {
-            ///TODO, have to change it according to the chosent ability of the player
-            Debug.LogError ("not implemented error, current chosen ability is not at default");
-        }
-        
     }
 
     private void OnMouseOverLadder (Ladder ladder)
