@@ -85,19 +85,13 @@ public class GameCursor : MonoBehaviour
         {
             case AbilityType.UNSET:
             case AbilityType.DEFAULT:
-                CursorPack default_cursor = GetCursorOfType ( CursorType.DEFAULT );
-                if ( default_cursor != null )
-                {
-                    Cursor.SetCursor ( default_cursor.image, default_cursor.offset, CursorMode.Auto );
-                }
+                ShowCursor ( GetCursorOfType ( CursorType.DEFAULT ) );
                 break;
             case AbilityType.KNIFE:
-                CursorPack knife_cursor = GetCursorOfType ( CursorType.KNIFE );
-                Cursor.SetCursor ( knife_cursor.image, knife_cursor.offset, CursorMode.Auto );
+                ShowCursor ( GetCursorOfType ( CursorType.KNIFE ) );
                 break;
             case AbilityType.HAND_PICK:
-                CursorPack hand_cursor = GetCursorOfType ( CursorType.HAND );
-                Cursor.SetCursor ( hand_cursor.image, hand_cursor.offset, CursorMode.Auto );
+                ShowCursor( GetCursorOfType ( CursorType.HAND ) );
                 break;
             case AbilityType.THROW:
                 break;
@@ -106,6 +100,7 @@ public class GameCursor : MonoBehaviour
             case AbilityType.PUNCH:
                 break;
             case AbilityType.SNIPING:
+                ShowCursor( GetCursorOfType ( CursorType.PISTOL ) ); ///TODO,pistol is just for testing
                 break;
             case AbilityType.TRAP:
                 break;
@@ -115,6 +110,19 @@ public class GameCursor : MonoBehaviour
                 break;
             default:
                 break;
+        }
+    }
+
+
+    private void ShowCursor (CursorPack cp)
+    {
+        if ( cp != null )
+        {
+            Cursor.SetCursor ( cp.image, cp.offset, CursorMode.Auto );
+        }
+        else
+        {
+            Debug.LogError ( "Could not find cursor " + cp.type );
         }
     }
 

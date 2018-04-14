@@ -6,7 +6,6 @@ public class Enemy : MonoBehaviour
 {
     public float m_health = 100;
     public bool m_is_alive = true;
-    public bool m_is_on_same_height = true;
 
     private Animator m_animator;
 
@@ -19,7 +18,7 @@ public class Enemy : MonoBehaviour
     {
         if (m_is_alive)
         {
-            AnimatorController.DoDeath ( m_animator );
+            CharacterAnimatorController.DoDeath ( m_animator );
             m_is_alive = false;
         }
     }

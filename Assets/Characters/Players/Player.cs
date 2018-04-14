@@ -1,6 +1,13 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+
+public enum ACTION_TYPE
+{
+    DEFAULT_OR_NONE = 0,
+    CLIMB,
+}
 
 public class Player : MonoBehaviour
 {
@@ -11,8 +18,8 @@ public class Player : MonoBehaviour
     private float m_min_move_threshold = 0.15f;
 
     [SerializeField]
-    [Range ( 0.3f, 2.0f )]
-    private float m_min_melee_attack_threshold = 1.0f;
+    [Range ( 0.3f, 15.0f )]
+    private float m_current_attack_range = 1.0f;
 
     [SerializeField]
     [Range ( 0.85f, 1 )]
@@ -80,12 +87,22 @@ public class Player : MonoBehaviour
         }
 
         m_animator = gameObject.GetComponentInChildren<Animator> ();
+
+
+        if (m_animator == null)
+        {
+            Debug.LogError ("no animator found on the component");
+        }
+
         // get current abilities
         m_current_destination = transform.position;
+        //AnimatorController.DoClimb ( m_animator ); ///TODO testing
     }//start
 
     private void Update ()
     {
+        //transform.Translate ( Vector3.up * Time.deltaTime, Space.World );
+
         if ( m_current_ladder != null )
         {
             m_current_mode = PlayerMode.MELEE_ACTION;
@@ -117,6 +134,9 @@ public class Player : MonoBehaviour
             case AbilityType.PISTOL:
                 break;
             case AbilityType.SNIPING:
+                ///TODO testing
+                m_current_mode = ( m_current_target ) ? PlayerMode.MELEE_ACTION : PlayerMode.IDLE;
+                MoveToCurrentDestination ();
                 break;
         }
     }//update
@@ -134,7 +154,7 @@ public class Player : MonoBehaviour
         }
         else
         {
-            float chosen_threshold = ( m_current_mode != PlayerMode.MELEE_ACTION ) ? m_min_move_threshold : m_min_melee_attack_threshold;
+            float chosen_threshold = ( m_current_mode != PlayerMode.MELEE_ACTION ) ? m_min_move_threshold : m_current_attack_range;
 
             if ( Vector3.Distance ( transform.position, m_current_destination ) >= chosen_threshold )
             {
@@ -152,7 +172,7 @@ public class Player : MonoBehaviour
                 {
                     //Debug.Log ("idle mode, playing idle animation");
                     m_is_busy = false;
-                    AnimatorController.DoNomralIdle ( m_animator );
+                    CharacterAnimatorController.DoNomralIdle ( m_animator );
                 }
             }
         }
@@ -163,8 +183,8 @@ public class Player : MonoBehaviour
         //Debug.Log ( "moving towards destination" );
         m_is_busy = false;
         transform.position = Vector3.MoveTowards ( transform.position, m_current_destination, Time.deltaTime * m_move_speed );
-        AnimatorController.DoNormalWalk ( m_animator );
-    }
+        CharacterAnimatorController.DoNormalWalk ( m_animator );
+    }//movetowardsdestination
 
     private bool IsLookingAt ( Vector3 destination )
     {
@@ -177,16 +197,16 @@ public class Player : MonoBehaviour
         Vector3 direction = ( destination - transform.position ).normalized;
         float dotProduct = Vector3.Dot ( transform.forward, direction );
         return dotProduct >= m_min_turn_threshold;
-
-    }
+    }//islookingat
 
     private void ModifyDestination ( Vector3 destination )
     {
         m_current_destination = destination;
-    }
+    }//modifydestination
 
     private void DoMeleeAction ()
     {
+        Debug.Log ("do melee action");
         m_is_busy = true;
 
         if ( m_current_ladder == null )
@@ -206,6 +226,12 @@ public class Player : MonoBehaviour
                     break;
                 case AbilityType.HAND_PICK:
                     break;
+                case AbilityType.PISTOL:
+                    //ShootCurrentTarget ();
+                    break;
+                case AbilityType.SNIPING: ///TODO, move this to ranged action
+                    ShootCurrentTarget ();
+                    break;
                 default:
                     Debug.LogError ( "un recognized melee action detected" );
                     break;
@@ -214,36 +240,67 @@ public class Player : MonoBehaviour
         }
         else
         {
-            AnimatorController.DoClimb ( m_animator );
-            StartCoroutine ( WaitForEndOfAction () );
+
+            /// TODO, figure out bottom or top
+            transform.position = m_current_ladder.GetBottomPoint ().position; 
+            transform.rotation = m_current_ladder.GetBottomPoint ().rotation;
+
+            CharacterAnimatorController.DoClimb ( m_animator );
+            StartCoroutine ( WaitForEndOfAction (ACTION_TYPE.CLIMB) );
 
             ///TODO start coroutine to end the current action
         }
     }
 
-    private IEnumerator WaitForEndOfAction ()
+    private void ShootCurrentTarget ()
     {
-        if ( m_current_ladder != null )
+        Debug.Log ("shotting target");
+        if (m_current_target != null)
         {
-            while ( m_current_ladder && transform.position.y <  m_current_ladder.GetTopPoint().position.y) /// TODO examine bottom point for end
-            {
-                transform.position = new Vector3(transform.position.x, transform.position.y + 0.5f, transform.position.z);
-                yield return new WaitForSeconds ( 0.2f );
-            }
-            AnimatorController.DoClimbEnd (m_animator);
-            EndCurrentMeleeAction ();
+            m_current_target.TakeDamage ( m_current_target.m_health ); ///TODO just for testing
         }
-        else
+        CharacterAnimatorController.DoShoot ( m_animator );
+    }
+
+    private IEnumerator WaitForEndOfAction (ACTION_TYPE action_type = ACTION_TYPE.DEFAULT_OR_NONE)
+    {
+        switch ( action_type )
         {
-            yield return new WaitForSeconds ( 1 );
+            case ACTION_TYPE.CLIMB:
+                /// TODO examine bottom point for end
+                while ( m_current_ladder && transform.position.y < m_current_ladder.GetTopPoint ().position.y ) 
+                {
+                    transform.Translate ( Vector3.up * Time.deltaTime );
+                    m_current_destination = transform.position;
+                    yield return null;
+                }
+
+                CharacterAnimatorController.DoClimbEnd ( m_animator );
+                // 0.3 = offset
+                yield return new WaitForSeconds ( m_animator.GetCurrentAnimatorStateInfo (0).length - 0.15f);
+
+                CharacterAnimatorController.DoNomralIdle (m_animator);
+                m_current_destination = m_current_ladder.GetLandingSpace ( true ).position;
+                transform.position = m_current_ladder.GetLandingSpace ( true ).position;
+                //EndCurrentMeleeAction ( ACTION_TYPE.CLIMB );
+                break;
+            case ACTION_TYPE.DEFAULT_OR_NONE:
+            default:
+                
+                break;
         }
+
+
+        EndCurrentMeleeAction ();
     }
 
     private void EndCurrentMeleeAction ()
     {
-        m_current_target = null; /// TODO consider making it a method
+        Debug.Log ("ending cucrrent melee action");
         m_current_ladder = null;
+        m_current_target = null; /// TODO consider making it a method
         ModifyDestination ( transform.position );
+
         m_profile.SelectAbility ( AbilityType.DEFAULT );
         m_is_busy = false; /// TODO, use this variable to prevent multiple action
     }
@@ -254,7 +311,7 @@ public class Player : MonoBehaviour
         {
             m_current_target.TakeDamage ( m_current_target.m_health );
         }
-        AnimatorController.DoStab ( m_animator );
+        CharacterAnimatorController.DoStab ( m_animator );
     }
 
     private bool IsOnSelectionPool ()
@@ -312,17 +369,12 @@ public class Player : MonoBehaviour
 
         if ( Input.GetMouseButtonDown ( 0 ) && !m_is_busy )
         {
-            if ( enemy.m_is_on_same_height )
-            {
-                m_current_target = enemy;
-                m_current_destination = enemy.gameObject.transform.position;
-            }
-            else
-            {
-                /// TODO , let player know that enemy is not at same height
-                Debug.LogError ( Messages.NOT_IN_SAME_HEIGHT );
-                //on_communicaiton_event_observers ( Messages.NOT_IN_SAME_HEIGHT );
-            }
+            ///TODO , get if enemy is reachable or not
+            m_current_target = enemy;
+
+            //not always
+            m_current_destination = enemy.gameObject.transform.position;
+            
         }
     }
     #endregion

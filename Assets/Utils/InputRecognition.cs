@@ -55,7 +55,7 @@ public class InputRecognition : MonoBehaviour
     {
         if ( Input.GetKeyDown ( KeyCode.Z ) )
         {
-            on_ability_select_observers (AbilityType.PISTOL);
+            on_ability_select_observers (AbilityType.SNIPING);
         }
         else if ( Input.GetKeyDown ( KeyCode.X ) )
         {
