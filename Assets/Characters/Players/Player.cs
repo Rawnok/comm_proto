@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 public enum ACTION_TYPE
 {
@@ -11,6 +12,8 @@ public enum ACTION_TYPE
 
 public class Player : MonoBehaviour
 {
+    public bool disable_custom_animation = false;
+
     [SerializeField]
     private InputRecognition input;
 
@@ -39,6 +42,9 @@ public class Player : MonoBehaviour
 
     [SerializeField]
     private Ladder m_current_ladder = null;
+
+    [SerializeField]
+    private NavMeshAgent m_nav_mesh;
 
     // pure private variables
     private Vector3 m_current_destination;
@@ -75,7 +81,6 @@ public class Player : MonoBehaviour
 
         ///TODO, have to tweek turn / speed values according to profile
         m_profile = GameManager.instance.GetCharacterProfile ( m_char_type );
-
         //modify speed and other values from cp
         if ( m_profile != null )
         {
@@ -94,21 +99,25 @@ public class Player : MonoBehaviour
             Debug.LogError ("no animator found on the component");
         }
 
+
+        m_nav_mesh = GetComponentInChildren<NavMeshAgent> ();
+
         // get current abilities
         m_current_destination = transform.position;
         //AnimatorController.DoClimb ( m_animator ); ///TODO testing
+        m_nav_mesh.SetDestination ( m_current_destination );
     }//start
 
     private void Update ()
     {
         //transform.Translate ( Vector3.up * Time.deltaTime, Space.World );
 
-        if ( m_current_ladder != null )
-        {
-            m_current_mode = PlayerMode.MELEE_ACTION;
-            MoveToCurrentDestination ();
-            return;
-        }
+        //if ( m_current_ladder != null )
+        //{
+        //    m_current_mode = PlayerMode.MELEE_ACTION;
+        //    MoveToCurrentDestination ();
+        //    return;
+        //}
 
         switch ( m_chosen_ability )
         {
@@ -143,6 +152,8 @@ public class Player : MonoBehaviour
 
     private void MoveToCurrentDestination ()
     {
+        
+
         // first look towards destination, 
         // then move to destination
         if ( !IsLookingAt ( m_current_destination ) )
@@ -172,22 +183,33 @@ public class Player : MonoBehaviour
                 {
                     //Debug.Log ("idle mode, playing idle animation");
                     m_is_busy = false;
-                    CharacterAnimatorController.DoNomralIdle ( m_animator );
+                    if ( !disable_custom_animation )
+                    {
+                        CharacterAnimatorController.DoNomralIdle ( m_animator );
+                    }
                 }
             }
         }
     }//MoveToCurrentDestination
+    
 
     private void MoveTowardsDestination ()
     {
         //Debug.Log ( "moving towards destination" );
         m_is_busy = false;
-        transform.position = Vector3.MoveTowards ( transform.position, m_current_destination, Time.deltaTime * m_move_speed );
-        CharacterAnimatorController.DoNormalWalk ( m_animator );
+        m_nav_mesh.SetDestination ( m_current_destination );
+        //transform.position = Vector3.MoveTowards ( transform.position, m_current_destination, Time.deltaTime * m_move_speed );
+        if (!disable_custom_animation)
+        {
+            CharacterAnimatorController.DoNormalWalk ( m_animator );
+        } 
     }//movetowardsdestination
 
-    private bool IsLookingAt ( Vector3 destination )
+    private bool IsLookingAt ( Vector3 destination ) 
     {
+
+        destination.y = -1; //no matter what height we are in, move to default height
+
         if (Vector3.Distance(destination, transform.position) <= 0.1f) 
         {
             // too small to judge direction
@@ -245,7 +267,9 @@ public class Player : MonoBehaviour
             transform.position = m_current_ladder.GetBottomPoint ().position; 
             transform.rotation = m_current_ladder.GetBottomPoint ().rotation;
 
-            CharacterAnimatorController.DoClimb ( m_animator );
+            if (!disable_custom_animation)
+                CharacterAnimatorController.DoClimb ( m_animator );
+
             StartCoroutine ( WaitForEndOfAction (ACTION_TYPE.CLIMB) );
 
             ///TODO start coroutine to end the current action
@@ -259,7 +283,9 @@ public class Player : MonoBehaviour
         {
             m_current_target.TakeDamage ( m_current_target.m_health ); ///TODO just for testing
         }
-        CharacterAnimatorController.DoShoot ( m_animator );
+
+        if (!disable_custom_animation)
+            CharacterAnimatorController.DoShoot ( m_animator );
     }
 
     private IEnumerator WaitForEndOfAction (ACTION_TYPE action_type = ACTION_TYPE.DEFAULT_OR_NONE)
@@ -275,11 +301,15 @@ public class Player : MonoBehaviour
                     yield return null;
                 }
 
-                CharacterAnimatorController.DoClimbEnd ( m_animator );
+                if(!disable_custom_animation)
+                    CharacterAnimatorController.DoClimbEnd ( m_animator );
                 // 0.3 = offset
                 yield return new WaitForSeconds ( m_animator.GetCurrentAnimatorStateInfo (0).length - 0.15f);
 
-                CharacterAnimatorController.DoNomralIdle (m_animator);
+                if(!disable_custom_animation)
+                    CharacterAnimatorController.DoNomralIdle (m_animator);
+
+
                 m_current_destination = m_current_ladder.GetLandingSpace ( true ).position;
                 transform.position = m_current_ladder.GetLandingSpace ( true ).position;
                 //EndCurrentMeleeAction ( ACTION_TYPE.CLIMB );
@@ -311,7 +341,12 @@ public class Player : MonoBehaviour
         {
             m_current_target.TakeDamage ( m_current_target.m_health );
         }
-        CharacterAnimatorController.DoStab ( m_animator );
+
+        if ( !disable_custom_animation )
+        {
+            CharacterAnimatorController.DoStab ( m_animator );
+        }
+        
     }
 
     private bool IsOnSelectionPool ()

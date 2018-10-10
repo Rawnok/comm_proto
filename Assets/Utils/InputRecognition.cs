@@ -31,9 +31,9 @@ public class InputRecognition : MonoBehaviour
     public const int COLLECTABLE_LAYER = 11;
     public const int PLAYER_LAYER = 12;
 
-    private const int MAX_DISTANCE_RAYCAST = 100;
+    private const int MAX_DISTANCE_RAYCAST = 300;
 
-    private int last_saved_layer = -1;
+    //private int last_saved_layer = -1;
 
     void Update ()
     {
@@ -89,7 +89,7 @@ public class InputRecognition : MonoBehaviour
         //set priorities here
         if ( CastOver ( PLAYER_LAYER, ray ) )
         {
-            //Debug.Log ("Player layer found");
+            //Debug.Log ( "Player layer found" );
             return;
         }
 
@@ -203,9 +203,8 @@ public class InputRecognition : MonoBehaviour
                 default:
                     Debug.LogError ("unidentified layer : " + hit.collider.gameObject.layer);
                     return false;
-            }        
+            }
         }
-
         return false;
     }
 }
